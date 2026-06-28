@@ -1,0 +1,1 @@
+// Cookie read/write + jose decode helpers — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 2)

@@ -1,0 +1,1 @@
+// Lecturer repository — maps to Spring LecturerController endpoints — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 3)

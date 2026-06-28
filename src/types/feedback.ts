@@ -1,0 +1,1 @@
+// Types: Feedback — 1:1 mirror of Spring DTOs — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 1)

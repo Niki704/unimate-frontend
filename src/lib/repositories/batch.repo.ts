@@ -1,0 +1,1 @@
+// Batch repository — maps to Spring BatchController endpoints — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 3)

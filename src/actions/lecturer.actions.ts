@@ -1,0 +1,1 @@
+// Server Actions: Lecturer — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 6)

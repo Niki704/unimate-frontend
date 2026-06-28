@@ -1,0 +1,1 @@
+// Types: Auth (login/register request/response) — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 1)

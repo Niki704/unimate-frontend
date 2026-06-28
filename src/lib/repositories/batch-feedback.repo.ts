@@ -1,0 +1,1 @@
+// Batch feedback repository — maps to Spring BatchFeedbackController endpoints — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 3)

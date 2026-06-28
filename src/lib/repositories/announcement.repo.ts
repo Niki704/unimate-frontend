@@ -1,0 +1,1 @@
+// Announcement repository — maps to Spring AnnouncementController endpoints — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 3)

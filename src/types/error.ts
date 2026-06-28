@@ -1,0 +1,1 @@
+// Types: Error response — same shape as Spring's ErrorResponse — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 1)

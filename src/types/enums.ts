@@ -1,0 +1,1 @@
+// Types: Enums — 1:1 mirror of Spring enums — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 1)
