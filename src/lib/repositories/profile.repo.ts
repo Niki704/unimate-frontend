@@ -1,1 +1,17 @@
-// Profile repository — maps to Spring ProfileController endpoints — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 3)
+// ============================================================
+// One function per ProfileController endpoint.
+// ============================================================
+
+import { apiFetch } from "@/lib/api-client";
+import type { ProfileRequestDTO, ProfileResponseDTO } from "@/types/profile";
+
+export const profileRepo = {
+  getByUserId: (userId: number) =>
+    apiFetch<ProfileResponseDTO>(`/api/v1/profiles/${userId}`),
+
+  upsert: (userId: number, dto: ProfileRequestDTO) =>
+    apiFetch<ProfileResponseDTO>(`/api/v1/profiles/${userId}`, {
+      method: "PUT",
+      body: dto,
+    }),
+};
