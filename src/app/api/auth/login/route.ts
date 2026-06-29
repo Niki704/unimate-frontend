@@ -1,1 +1,0 @@
-// Route handler: login — sets httpOnly cookie — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 4)
