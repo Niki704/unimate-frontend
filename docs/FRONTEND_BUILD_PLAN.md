@@ -14,7 +14,8 @@
 | Node.js | 22 LTS | Next.js 16 requires 20.9+ minimum; use 22 |
 | TypeScript | latest stable | Non-negotiable for the 1:1 DTO mirroring this plan depends on |
 | Tailwind CSS | 4.3.x | CSS-first config via `@theme` in a single CSS file — no `tailwind.config.js` by default |
-| `jose` | latest | Edge-runtime-compatible JWT decoding for `proxy.ts` (Node's `jsonwebtoken` does not run on the Edge runtime) |
+
+**Correction from the original version of this plan:** no JWT library is needed at all. `proxy.ts` in Next.js 16 runs on the **Node.js runtime only** — Edge is not supported and cannot be configured (confirmed directly from Next.js's own docs, not assumed). The original reasoning for `jose` was Edge-Runtime compatibility, which no longer applies. See Section 2 for what replaces it.
 
 **Init command:**
 ```
@@ -30,10 +31,17 @@ npx create-next-app@latest unimate-frontend --typescript --tailwind --eslint --a
 **Why this, not a client-side SPA calling Spring directly:**
 - The JWT lives in an **httpOnly cookie**, invisible to browser JavaScript — eliminates the XSS-token-theft risk that comes with `localStorage` token storage.
 - **No CORS configuration needed on Spring.** CORS only governs browser-to-server requests; server-to-server calls (Next.js's server calling Spring's server) aren't subject to it at all.
-- **No shared secret between the two codebases.** `proxy.ts` only needs to *read* the token's claims for UX/redirect purposes (which dashboard shell to render) — it never verifies the signature, so the JWT signing secret stays Spring-only. The actual trust decision is still made by Spring on every real request; a forged or tampered cookie simply fails there (401/403), one step later than ideal, but never a real security gap.
-- The Spring backend's URL becomes a **server-only environment variable** (not `NEXT_PUBLIC_*`) — it's never shipped to the browser bundle at all.
+- **No shared secret between the two codebases.** Per the decision below, neither `proxy.ts` nor the layout guards verify the JWT's signature — they just read its claims for UX/redirect purposes. The actual trust decision is still made by Spring on every real request; a forged or tampered cookie simply fails there (401/403), one step later than ideal, but never a real security gap. Given this project runs locally only, that tradeoff is the right one — it removes a dependency and a secret to keep in sync, in exchange for relying on the check Spring already does correctly.
 
-**What `proxy.ts` is actually for:** checking cookie presence and doing an *unverified* decode (via `jose`'s `decodeJwt`) purely to redirect appropriately — e.g. a Student hitting `/admin/*` gets bounced before the page even renders. If a repository call ever gets back a 401/403 from Spring despite this, that's the real signal to clear the cookie and redirect to login — Spring's response code is the actual source of truth, always.
+**Where the route-protection logic actually lives — corrected from the original version of this plan:**
+
+`proxy.ts` (Next.js 16) runs on the **Node.js runtime only** — confirmed directly from Next.js's own docs: *"The edge runtime is NOT supported in proxy. The proxy runtime is nodejs, and it cannot be configured."* This isn't just a rename from `middleware.ts` — Next.js's current guidance is explicit that `proxy.ts` is *"strictly for Routing... It is NOT for Authentication (Auth should happen in Layouts or Route Handlers)."* This followed a real vulnerability (CVE-2025-29927) where auth checks inside the old Edge-Runtime `middleware.ts` could be bypassed under certain request conditions.
+
+So the split is:
+- **`proxy.ts`** — thin, blanket check only: does the session cookie exist at all? If not, redirect to `/login`. No JWT parsing here.
+- **A `layout.tsx` per role-based route group** (`app/(admin)/layout.tsx`, `app/(lecturer)/layout.tsx`, `app/(student)/layout.tsx`) — the real check. Reads the cookie, decodes the JWT's payload (a plain base64url-decode of the middle segment — no library needed, since we're not verifying the signature, per the decision above), and redirects away if the role doesn't match that section. This runs as an ordinary part of Server Component rendering, not a separate interceptable layer, so it doesn't carry the same bypass risk class that affected `middleware.ts`.
+
+The Spring backend's URL stays a **server-only environment variable** (not `NEXT_PUBLIC_*`) — it's never shipped to the browser bundle at all.
 
 ---
 
@@ -141,7 +149,7 @@ Write every file in `src/types/`, mirroring `Models.java`/the DTO files/`enums` 
 
 ### Phase 2 — Shared Plumbing (`lib/api-client.ts`, `lib/session.ts`)
 - `api-client.ts`: one function that takes a path + options, prepends `SPRING_API_BASE_URL`, attaches `Authorization: Bearer <token>` (token read from the cookie via `session.ts`), and — critically — parses a non-2xx response into the typed `ErrorResponse` shape so every repository function gets consistent error objects, not raw fetch failures.
-- `session.ts`: `getToken()`, `setSessionCookie()`, `clearSessionCookie()`, and `decodeRole()` (unverified `jose` decode, UX-only per Section 2).
+- `session.ts`: `getToken()`, `setSessionCookie()`, `clearSessionCookie()`, and `decodeRole()` (a plain base64url-decode of the JWT's payload segment — no library, since signature verification is deliberately Spring's job only, per Section 2).
 
 ### Phase 3 — Repositories
 One file per entity in `lib/repositories/`, each function corresponding to exactly one Spring endpoint (e.g. `studentRepo.approve(id, dto)` → `PATCH /api/v1/students/{id}/approve`). These are the only files allowed to call `api-client.ts` directly.
@@ -149,8 +157,8 @@ One file per entity in `lib/repositories/`, each function corresponding to exact
 ### Phase 4 — Auth Flow
 The two Route Handlers (`/api/auth/login`, `/api/auth/logout`) — these are the one place a true Route Handler is needed, since setting/clearing an httpOnly cookie requires it. Plus the login page and both registration pages (Student, Lecturer), built as Client Components submitting to these routes.
 
-### Phase 5 — `proxy.ts`
-Route protection: redirect unauthenticated requests to `/login`; redirect a logged-in user away from a route group that doesn't match their decoded role. Public matcher list: `/login`, `/register/*` — matching `SecurityConfig`'s existing public-endpoint list exactly.
+### Phase 5 — Route Protection: `proxy.ts` + Layout Guards
+`proxy.ts`: a blanket, thin check — session cookie exists or redirect to `/login`. No JWT parsing here (see Section 2 for why). Then one `layout.tsx` per role-based route group (`(admin)`, `(lecturer)`, `(student)`) doing the real check: decode the cookie's role claim via `session.ts`'s `decodeRole()`, redirect away if it doesn't match. Public matcher list for `proxy.ts`: `/login`, `/register/*` — matching `SecurityConfig`'s existing public-endpoint list exactly.
 
 ### Phase 6 — Server Actions
 One file per entity-group in `src/actions/`, each a `'use server'` function calling the relevant repository function(s), then `revalidatePath`/`redirect` as appropriate. This is where the "Lecturer must be assigned to this batch" type of UX feedback gets surfaced from the `ErrorResponse` Spring sends back — not re-implemented client-side.
@@ -170,7 +178,8 @@ Build out each route group's pages using Phases 1–7. Suggested order: Auth pag
 
 Worth keeping visible during the build — these are exactly the kind of details a stale tutorial or an agent trained on older patterns will get wrong:
 
-- File is `proxy.ts`, not `middleware.ts`.
+- File is `proxy.ts`, not `middleware.ts` — and it runs on **Node.js only**, not Edge (confirmed from Next.js's own docs; several third-party tutorials still say otherwise and are wrong).
+- **Real auth/role checks belong in `layout.tsx`, not `proxy.ts`.** Next.js's own current guidance is explicit about this, following a real bypass vulnerability (CVE-2025-29927) in the old Edge-Runtime `middleware.ts`. Keep `proxy.ts` to a blanket cookie-existence check only.
 - `cookies()` and `headers()` are **async** — always `await cookies()`, not the old synchronous call.
 - Tailwind config lives in CSS (`@import "tailwindcss"; @theme { ... }`), not a `tailwind.config.js`, unless a specific need for the JS config format comes up.
 - Turbopack is the default bundler — no need to opt in, and no legacy webpack-specific plugins should be introduced.
