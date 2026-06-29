@@ -1,1 +1,19 @@
-// Types: Portfolio — 1:1 mirror of Spring DTOs — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 1)
+// ============================================================
+// Mirrors PortfolioRequestDTO / PortfolioResponseDTO.
+// ============================================================
+
+export interface PortfolioRequestDTO {
+  skills?: string[];
+  attachments?: string[];
+  projectLinks?: string[];
+}
+
+export interface PortfolioResponseDTO {
+  id: number;
+  studentId: number;
+  skills: string[];
+  attachments: string[];
+  projectLinks: string[];
+  createdDate: string; // LocalDateTime
+  lastUpdated: string; // LocalDateTime
+}

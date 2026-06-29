@@ -1,1 +1,18 @@
-// Types: Auth (login/register request/response) — see docs/FRONTEND_BUILD_PLAN.md Section 5 (Phase 1)
+// ============================================================
+// Mirrors LoginRequestDTO / LoginResponseDTO.
+// ============================================================
+
+import type { Role } from "./enums";
+
+export interface LoginRequestDTO {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponseDTO {
+  token: string;
+  userId: number;
+  firstName: string;
+  lastName: string;
+  role: Role;
+}
