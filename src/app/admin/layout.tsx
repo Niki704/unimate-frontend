@@ -1,25 +1,29 @@
-// ============================================================
-// The real protection for everything under /admin: must have a
-// session AND that session's role must be ADMIN. A logged-in
-// Lecturer/Student hitting this gets sent to their OWN dashboard,
-// not bounced to /login — they're not unauthenticated, just in
-// the wrong section.
-// ============================================================
-
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
 import { dashboardPathForRole } from "@/lib/routes";
+import { adminRepo } from "@/lib/repositories/admin.repo";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const user = await getSessionUser();
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
+  if (user.role !== "ADMIN") redirect(dashboardPathForRole(user.role));
 
-  if (user.role !== "ADMIN") {
-    redirect(dashboardPathForRole(user.role));
-  }
+  const admin = await adminRepo.getById(user.userId);
 
-  return <>{children}</>;
+  return (
+    <DashboardShell
+      role="ADMIN"
+      firstName={admin.firstName}
+      lastName={admin.lastName}
+      email={user.email}
+    >
+      {children}
+    </DashboardShell>
+  );
 }

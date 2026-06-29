@@ -1,26 +1,115 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* ─── Design tokens ──────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Slate palette */
+  --color-slate-50:  #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+
+  /* Semantic aliases */
+  --color-background:       var(--color-slate-50);
+  --color-foreground:       var(--color-slate-900);
+  --color-card:             #ffffff;
+  --color-card-foreground:  var(--color-slate-900);
+  --color-muted:            var(--color-slate-500);
+  --color-border:           var(--color-slate-200);
+  --color-input-border:     var(--color-slate-300);
+
+  /* Status colours */
+  --color-success:     #16a34a;
+  --color-success-bg:  #f0fdf4;
+  --color-error:       #dc2626;
+  --color-error-bg:    #fef2f2;
+  --color-warning:     #d97706;
+  --color-warning-bg:  #fffbeb;
+  --color-info:        #2563eb;
+  --color-info-bg:     #eff6ff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ─── Base ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { height: 100%; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* ─── Toast keyframes ────────────────────────────────────── */
+
+/* Shared slide-in from bottom */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(1rem); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Shared slide-out to bottom */
+@keyframes toast-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(1rem); }
+}
+
+/* Success icon pop */
+@keyframes icon-pop {
+  0%   { transform: scale(0.8); }
+  60%  { transform: scale(1.1); }
+  100% { transform: scale(1.0); }
+}
+
+/* Error shake */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  15%     { transform: translateX(-5px); }
+  30%     { transform: translateX(5px); }
+  45%     { transform: translateX(-4px); }
+  60%     { transform: translateX(4px); }
+  75%     { transform: translateX(-2px); }
+  90%     { transform: translateX(2px); }
+}
+
+/* Progress bar fill */
+@keyframes progress-fill {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
+/* ─── Toast utility classes ──────────────────────────────── */
+.toast-enter {
+  animation: toast-in 300ms ease-out forwards;
+}
+.toast-exit {
+  animation: toast-out 200ms ease-in forwards;
+}
+.toast-icon-pop {
+  animation: icon-pop 300ms ease-out forwards;
+}
+.toast-shake {
+  animation: toast-in 150ms ease-out, shake 150ms ease-in-out 150ms;
+}
+.toast-progress {
+  animation: progress-fill var(--toast-duration, 4000ms) linear forwards;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: var(--color-slate-100); }
+::-webkit-scrollbar-thumb  { background: var(--color-slate-300); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-slate-400); }

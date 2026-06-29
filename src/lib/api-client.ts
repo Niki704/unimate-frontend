@@ -81,6 +81,9 @@ export async function apiFetch<TResponse>(
   const data = text ? JSON.parse(text) : undefined;
 
   if (!response.ok) {
+    console.log("Status:", response.status);
+    console.log("Response:", data);
+    
     throw new ApiError(response.status, data as ErrorResponse);
   }
 
